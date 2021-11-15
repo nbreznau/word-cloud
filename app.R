@@ -5,10 +5,12 @@ library(wordcloud2)
 library(tm)
 # install.packages("colourpicker")
 library(colourpicker)
+library(RColorBrewer)
 
 ui <- fluidPage(
   h1("Word Cloud"),
-  h4(tags$a(href = "https://www.antoinesoetewey.com/", "Antoine Soetewey")),
+  h4(tags$a(href = "https://www.antoinesoetewey.com/", "Antoine Soetewey (v1)")),
+  h4(tags$a(href = "https://sites.google.com/site/nbreznau/", "Nate Breznau (v2)")),
   # Create a container for tab panels
   tabsetPanel(
     # Create a "Word cloud" tab
@@ -94,6 +96,14 @@ ui <- fluidPage(
           hr(),
           colourInput("col", "Background color", value = "white"),
           hr(),
+          numericInput("fontsize", "Font size", value = 0.5, max = 3, step = 0.5),
+          hr(),
+          selectInput("palette", "Choose Colour palette",
+                      list("Blues", "BuGn", "BuPu", "GnBu", "Greens", 
+                           "Greys", "Oranges", "OrRd", "PuBu", "PuBuGn", "PuRd", 
+                           "Purples", "RdPu", "Reds", "YlGn", 
+                           "YlGnBu", "YlOrBr", "YlOrRd")),
+          hr(),
           HTML('<p>Report a <a href="https://github.com/AntoineSoetewey/word-cloud/issues">bug</a> or view the <a href="https://github.com/AntoineSoetewey/word-cloud">code</a>. See more information about this app in this <a href="https://statsandr.com/blog/draw-a-word-cloud-with-a-shiny-app/">article</a>.</p><p>Back to <a href="https://www.antoinesoetewey.com/">antoinesoetewey.com</a> or <a href="https://statsandr.com/">statsandr.com</a>.</p>')
         ),
         mainPanel(
@@ -110,13 +120,12 @@ ui <- fluidPage(
       "Instructions on how to use this Shiny app:",
       br(),
       br(),
-      HTML("<ul><li>When uploading a file, make sure to upload a .csv or .txt file</li>
+      HTML("<ul><li>The ideal file is a text file with word repetition = size of word in cloud</li>
+       <li>However, you can upload full-texts! Just be aware that this may lead to undesired words appearing</li>
+       <li>When uploading a file, make sure to upload a .csv or .txt file</li>
        <li>If it is a .csv file, there should be only one column containing all words or sentences (see below for example files)</li>
        <li>Numbers and punctuations will be automatically removed, as well as stop words in the language of your choice (via the dropdown selector)</li></ul>"),
-      "Example files:",
-      tags$a(href = "https://www.antoinesoetewey.com/files/ihaveadream.csv", "example.csv"),
-      "and",
-      tags$a(href = "https://www.antoinesoetewey.com/files/ihaveadream.txt", "example.txt"),
+      
       br(),
       br(),
       em("Source: DataCamp"),
@@ -152,7 +161,8 @@ server <- function(input, output) {
     readLines(input$file$datapath)
   })
 
-  create_wordcloud <- function(data, num_words = 100, background = "white") {
+  create_wordcloud <- function(data, num_words = 100, background = "white", 
+                               col = brewer.pal(100, "Blues"), size = 1) {
 
     # If text is provided, convert it to a dataframe of word frequencies
     if (is.character(data)) {
@@ -186,13 +196,17 @@ server <- function(input, output) {
     if (nrow(data) == 0) {
       return(NULL)
     }
-
-    wordcloud2(data, backgroundColor = background)
+    
+    wordcloud2(data, backgroundColor = background,
+               color = col,
+               size = size)
   }
   output$cloud <- renderWordcloud2({
     create_wordcloud(data_source(),
       num_words = input$num,
-      background = input$col
+      background = input$col,
+      col = rep_len(rev(c(brewer.pal(9, input$palette))), input$num), #paste0("brewer.pal(", 12, "\"", input$palette,"\""),
+      size = input$fontsize
     )
   })
 }
